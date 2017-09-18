@@ -76,6 +76,32 @@ namespace MongoDB.Samples.AggregationFramework.Library
             return aggregate.ToList();
         }
 
+        public void GetAreaByRegion(IMongoCollection<State> collection)
+        {
+            //var aggregate = collection.Aggregate()
+            //    .Group(new BsonDocument
+            //    {
+            //        { "_id", "$region" },
+            //        { "totalArea", new BsonDocument("$sum", "$areaM") },
+            //        { "avgArea", new BsonDocument("$avg", "$areaM") },
+            //        { "numStates", new BsonDocument("$sum", 1) },
+            //        { "states", new BsonDocument("$push", "$name") }
+            //    });
+
+
+            var aggregate = collection.AsQueryable()
+                .GroupBy(x => x.Id, x => new
+            {
+              //Region: x.Key(),
+              //TotalArea: x.Sum(y => y.AreaM),
+              //AvgArea: x.Average(y => y.areaM)
+              //NumStates: x.Count(),
+              //States: x.Select(y => y.name).ToList()
+            });
+
+            //return aggregate.ToList();
+        }
+
         public List<BsonDocument> GetPopulationByYear(IMongoCollection<BsonDocument> collection)
         {
             var aggregate = collection.Aggregate()

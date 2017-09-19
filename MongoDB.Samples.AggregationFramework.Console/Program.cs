@@ -35,6 +35,8 @@ namespace MongoDB.Samples.AggregationFramework.ConsoleApp
             Console.WriteLine($"Command line parameter is '{index}'");
 
             string results = string.Empty;
+            DateTime dtStart = DateTime.MinValue;
+            DateTime dtEnd = DateTime.MinValue;
 
             if (strMode.ToLower() == "linq")
             {
@@ -46,14 +48,9 @@ namespace MongoDB.Samples.AggregationFramework.ConsoleApp
                         break;
                     case 2:
                         Console.WriteLine("Area by US Census region (with states) are:\r\n");
-                        DateTime dtStart = DateTime.Now;
+                        dtStart = DateTime.Now;
                         List<CensusArea> censusAreas = dbMgr.GetAreaByRegion(colStates);
-                        DateTime dtCensus = DateTime.Now;
-                        List<BsonDocument> results2 = dbMgr.GetAreaByRegion(collection);
-                        DateTime dtGeneric = DateTime.Now;
-                        Console.WriteLine($"Linq method took {(dtCensus - dtStart).TotalMilliseconds} ms");
-                        Console.WriteLine($"BsonDocument method took {(dtGeneric - dtCensus).TotalMilliseconds} ms");
-                        Console.WriteLine(results2.ToJson(new JsonWriterSettings { Indent = true }));
+                        dtEnd = DateTime.Now;
                         results = censusAreas.ToJson(new JsonWriterSettings { Indent = true });
                         break;
                     case 3:
@@ -96,7 +93,10 @@ namespace MongoDB.Samples.AggregationFramework.ConsoleApp
                         break;
                     case 2:
                         Console.WriteLine("Area by US Census region (with states) are:\r\n");
-                        List<BsonDocument> results2 = dbMgr.GetAreaByRegion(collection);
+                        dtStart = DateTime.Now;
+                        List<BsonDocument> censusAreas = dbMgr.GetAreaByRegion(collection);
+                        dtEnd = DateTime.Now;
+                        results = censusAreas.ToJson(new JsonWriterSettings { Indent = true });
                         break;
                     case 3:
                         Console.WriteLine("Total US population by census year:\r\n");
@@ -129,7 +129,9 @@ namespace MongoDB.Samples.AggregationFramework.ConsoleApp
             }
 
             Console.WriteLine(results);
-            //Console.WriteLine(Newtonsoft.Json.Linq.JValue.Parse(results).ToString(Newtonsoft.Json.Formatting.Indented))     
+            //Console.WriteLine(Newtonsoft.Json.Linq.JValue.Parse(results).ToString(Newtonsoft.Json.Formatting.Indented))   
+            Console.WriteLine($"{strMode.ToUpperInvariant()} method took {(dtEnd - dtStart).TotalMilliseconds} ms");
+            Console.WriteLine("Press Enter to exit");
             Console.ReadLine();
         }
     }

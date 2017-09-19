@@ -61,17 +61,17 @@ namespace MongoDB.Samples.AggregationFramework.Library
 
         }
 
-        public List<BsonDocument> GetTotalUSArea(IMongoCollection<BsonDocument> collection)
+        public string GetTotalUSArea(IMongoCollection<BsonDocument> collection)
         {
             var aggregate = collection.Aggregate().Group(new BsonDocument {
                 { "_id", BsonNull.Value },
                 { "totalArea", new BsonDocument("$sum", "$areaM") },
                 { "avgArea", new BsonDocument("$avg", "$areaM") }
             });
-            return aggregate.ToList();
+            return aggregate.ToList().ToJson();
         }
 
-        public List<BsonDocument> GetAreaByRegion(IMongoCollection<BsonDocument> collection)
+        public string GetAreaByRegion(IMongoCollection<BsonDocument> collection)
         {
             var aggregate = collection.Aggregate()
                 .Group(new BsonDocument
@@ -82,23 +82,36 @@ namespace MongoDB.Samples.AggregationFramework.Library
                     { "numStates", new BsonDocument("$sum", 1) },
                     { "states", new BsonDocument("$push", "$name") }
                 });
-            return aggregate.ToList();
+            return aggregate.ToList().ToJson();
         }
 
-        public List<CensusArea> GetAreaByRegion(IMongoCollection<State> collection)
+        public string GetAreaByRegion(IMongoCollection<State> collection)
         {
             var aggregate = collection.AsQueryable()
-                .GroupBy(p => p.region, (k, s) => new CensusArea {
+                .GroupBy(p => p.region, (k, s) => new
+                {
                     Id = k,
-                    totalArea = s.Sum(y=> y.areaM),
+                    totalArea = s.Sum(y => y.areaM),
                     avgArea = s.Average(y => y.areaM),
                     numStates = s.Count(),
                     states = s.Select(y => y.name)
                 });
-            return aggregate.ToList();
+            return aggregate.ToList().ToJson();
         }
 
-        public List<BsonDocument> GetPopulationByYear(IMongoCollection<BsonDocument> collection)
+        private string GetAreaByRegion<T>(IMongoCollection<T> collection) {
+            if (typeof(T) == typeof(State))
+            {
+                //run Linq aggregation
+            }
+            else
+            {
+                //run BsonDocument Aggregation
+            }
+            return string.Empty;
+        }
+
+        public string GetPopulationByYear(IMongoCollection<BsonDocument> collection)
         {
             var aggregate = collection.Aggregate()
                 .Unwind("data")
@@ -108,10 +121,10 @@ namespace MongoDB.Samples.AggregationFramework.Library
                     { "totalPop", new BsonDocument("$sum", "$data.totalPop") }
                 })
                 .Sort(new BsonDocument("totalPop", 1));
-            return aggregate.ToList();
+            return aggregate.ToList().ToJson();
         }
 
-        public List<BsonDocument> GetSouthernStatesPopulationByYear(IMongoCollection<BsonDocument> collection)
+        public string GetSouthernStatesPopulationByYear(IMongoCollection<BsonDocument> collection)
         {
             var aggregate = collection.Aggregate()
                 .Match(new BsonDocument("region", "South"))
@@ -123,10 +136,10 @@ namespace MongoDB.Samples.AggregationFramework.Library
                 })
                 .Sort(new BsonDocument("totalPop", 1))
             ;
-            return aggregate.ToList();
+            return aggregate.ToList().ToJson();
         }
 
-        public List<BsonDocument> GetPopulationDeltaByState(IMongoCollection<BsonDocument> collection)
+        public string GetPopulationDeltaByState(IMongoCollection<BsonDocument> collection)
         {
             var aggregate = collection.Aggregate()
                 .Unwind("data")
@@ -156,7 +169,7 @@ namespace MongoDB.Samples.AggregationFramework.Library
                 )
                 .Sort(new BsonDocument("deltaPercent", 1))
             ;
-            return aggregate.ToList();
+            return aggregate.ToList().ToJson();
         }
 
         /// <summary>
@@ -164,7 +177,7 @@ namespace MongoDB.Samples.AggregationFramework.Library
         /// </summary>
         /// <param name="collection"></param>
         /// <returns></returns>
-        public List<BsonDocument> GetPopulationByState500KmsAroundMemphis(IMongoCollection<BsonDocument> collection, string outCollection = "")
+        public string GetPopulationByState500KmsAroundMemphis(IMongoCollection<BsonDocument> collection, string outCollection = "")
         {
             BsonDocument geoPoint = new BsonDocument
         {
@@ -195,10 +208,10 @@ namespace MongoDB.Samples.AggregationFramework.Library
             {
                 aggregate.Out(outCollection);
             }
-            return aggregate.ToList();
+            return aggregate.ToList().ToJson();
         }
 
-        public List<BsonDocument> GetPopulationDensityByState(IMongoCollection<BsonDocument> collection)
+        public string GetPopulationDensityByState(IMongoCollection<BsonDocument> collection)
         {
             var aggregate = collection.Aggregate()
                 .Match(new BsonDocument("data.totalPop", new BsonDocument("$gt", 1000000)))
@@ -241,7 +254,7 @@ namespace MongoDB.Samples.AggregationFramework.Library
                 )
                 .Sort(new BsonDocument("deltaPercent", 1))
             ;
-            return aggregate.ToList();
+            return aggregate.ToList().ToJson();
         }
 
     }

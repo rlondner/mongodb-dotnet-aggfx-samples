@@ -2,7 +2,9 @@
 using MongoDB.Samples.AggregationFramework.Library;
 using System;
 using System.IO;
-using Newtonsoft.Json.Linq;
+using MongoDB.Bson.IO;
+using System.Collections.Generic;
+using MongoDB.Bson;
 
 namespace MongoDB.Samples.AggregationFramework.ConsoleApp
 {
@@ -44,7 +46,15 @@ namespace MongoDB.Samples.AggregationFramework.ConsoleApp
                         break;
                     case 2:
                         Console.WriteLine("Area by US Census region (with states) are:\r\n");
-                        results = dbMgr.GetAreaByRegion(colStates);
+                        DateTime dtStart = DateTime.Now;
+                        List<CensusArea> censusAreas = dbMgr.GetAreaByRegion(colStates);
+                        DateTime dtCensus = DateTime.Now;
+                        List<BsonDocument> results2 = dbMgr.GetAreaByRegion(collection);
+                        DateTime dtGeneric = DateTime.Now;
+                        Console.WriteLine($"Linq method took {(dtCensus - dtStart).TotalMilliseconds} ms");
+                        Console.WriteLine($"BsonDocument method took {(dtGeneric - dtCensus).TotalMilliseconds} ms");
+                        Console.WriteLine(results2.ToJson(new JsonWriterSettings { Indent = true }));
+                        results = censusAreas.ToJson(new JsonWriterSettings { Indent = true });
                         break;
                     case 3:
                         Console.WriteLine("Total US population by census year:\r\n");
@@ -86,7 +96,7 @@ namespace MongoDB.Samples.AggregationFramework.ConsoleApp
                         break;
                     case 2:
                         Console.WriteLine("Area by US Census region (with states) are:\r\n");
-                        results = dbMgr.GetAreaByRegion(collection);
+                        List<BsonDocument> results2 = dbMgr.GetAreaByRegion(collection);
                         break;
                     case 3:
                         Console.WriteLine("Total US population by census year:\r\n");
@@ -112,18 +122,14 @@ namespace MongoDB.Samples.AggregationFramework.ConsoleApp
                         Console.WriteLine("State population density comparison in 1990 and 2010 :\r\n");
                         results = dbMgr.GetPopulationDensityByState(collection);
                         break;
-                    case 9:
-                        Console.WriteLine("Area by US Census region (with states) are:\r\n");
-
-                        results = dbMgr.GetAreaByRegion(colStates);
-                        break;
                     default:
                         results = dbMgr.GetTotalUSArea(collection);
                         break;
                 }
             }
 
-            Console.WriteLine(JValue.Parse(results).ToString(Newtonsoft.Json.Formatting.Indented));
+            Console.WriteLine(results);
+            //Console.WriteLine(Newtonsoft.Json.Linq.JValue.Parse(results).ToString(Newtonsoft.Json.Formatting.Indented))     
             Console.ReadLine();
         }
     }

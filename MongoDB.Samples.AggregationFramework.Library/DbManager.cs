@@ -4,6 +4,7 @@ using MongoDB.Bson;
 using System.Collections.Generic;
 using System.Linq;
 using MongoDB.Driver.Linq;
+using MongoDB.Bson.IO;
 
 namespace MongoDB.Samples.AggregationFramework.Library
 {
@@ -12,6 +13,7 @@ namespace MongoDB.Samples.AggregationFramework.Library
 
         private volatile IMongoCollection<BsonDocument> m_collection;
         private volatile IMongoCollection<State> m_colStates;
+        private volatile IMongoClient m_client;
         private static object syncRoot = new Object();
 
         private string m_ConnectionUri;
@@ -31,16 +33,18 @@ namespace MongoDB.Samples.AggregationFramework.Library
             {
                 lock (syncRoot)
                 {
+                    if(m_client == null)
+                    {
+                        m_client = new MongoClient(m_ConnectionUri);
+                    }
                     if (m_collection == null)
                     {
-                        var client = new MongoClient(m_ConnectionUri);
-                        var db = client.GetDatabase(m_DatabaseName);
+                        var db = m_client.GetDatabase(m_DatabaseName);
                         m_collection = db.GetCollection<BsonDocument>(collectionName);
                     }
                 }
             }
             return m_collection;
-
         }
 
         public IMongoCollection<State> GetStatesCollection(string collectionName)
@@ -49,16 +53,18 @@ namespace MongoDB.Samples.AggregationFramework.Library
             {
                 lock (syncRoot)
                 {
+                    if (m_client == null)
+                    {
+                        m_client = new MongoClient(m_ConnectionUri);
+                    }
                     if (m_colStates == null)
                     {
-                        var client = new MongoClient(m_ConnectionUri);
-                        var db = client.GetDatabase(m_DatabaseName);
+                        var db = m_client.GetDatabase(m_DatabaseName);
                         m_colStates = db.GetCollection<State>(collectionName);
                     }
                 }
             }
             return m_colStates;
-
         }
 
         public string GetTotalUSArea(IMongoCollection<BsonDocument> collection)
@@ -71,7 +77,25 @@ namespace MongoDB.Samples.AggregationFramework.Library
             return aggregate.ToList().ToJson();
         }
 
-        public string GetAreaByRegion(IMongoCollection<BsonDocument> collection)
+        public string GetTotalUSArea(IMongoCollection<State> collection)
+        {
+            //var aggregate = collection.Aggregate().Group(new BsonDocument {
+            //    { "_id", BsonNull.Value },
+            //    { "totalArea", new BsonDocument("$sum", "$areaM") },
+            //    { "avgArea", new BsonDocument("$avg", "$areaM") }
+            //});
+
+            var aggregate = collection.AsQueryable()
+                .GroupBy(p => p.region,(k, s) => new
+                {
+                    totalArea = s.Sum(y => y.areaM),
+                    avgArea = s.Average(y => y.areaM),
+                });
+            return aggregate.ToList().ToJson();
+        }
+
+
+        public List<BsonDocument> GetAreaByRegion(IMongoCollection<BsonDocument> collection)
         {
             var aggregate = collection.Aggregate()
                 .Group(new BsonDocument
@@ -82,13 +106,13 @@ namespace MongoDB.Samples.AggregationFramework.Library
                     { "numStates", new BsonDocument("$sum", 1) },
                     { "states", new BsonDocument("$push", "$name") }
                 });
-            return aggregate.ToList().ToJson();
+            return aggregate.ToList();
         }
 
-        public string GetAreaByRegion(IMongoCollection<State> collection)
+        public List<CensusArea> GetAreaByRegion(IMongoCollection<State> collection)
         {
             var aggregate = collection.AsQueryable()
-                .GroupBy(p => p.region, (k, s) => new
+                .GroupBy(p => p.region, (k, s) => new CensusArea
                 {
                     Id = k,
                     totalArea = s.Sum(y => y.areaM),
@@ -96,7 +120,7 @@ namespace MongoDB.Samples.AggregationFramework.Library
                     numStates = s.Count(),
                     states = s.Select(y => y.name)
                 });
-            return aggregate.ToList().ToJson();
+            return aggregate.ToList();
         }
 
         private string GetAreaByRegion<T>(IMongoCollection<T> collection) {

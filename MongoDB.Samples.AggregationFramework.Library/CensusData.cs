@@ -1,14 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using MongoDB.Bson.Serialization.Attributes;
+
 
 namespace MongoDB.Samples.AggregationFramework.Library
 {
     public class CensusData
     {
-        public int year { get; set; }
-        public int totalPop { get; set; }
-        public int totalHouse { get; set; }
-        public int occHouse { get; set; }
+        [BsonElement("year")]
+        public int Year { get; set; }
+        [BsonElement("totalPop")]
+        public int TotalPopulation { get; set; }
+        [BsonElement("totalHouse")]
+        public int TotalHouseholds { get; set; }
+        [BsonElement("occHouse")]
+        public int OccupiedHouseHolds { get; set; }
     }
 }

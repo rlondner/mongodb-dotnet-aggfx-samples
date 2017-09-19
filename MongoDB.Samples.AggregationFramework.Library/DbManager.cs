@@ -123,18 +123,6 @@ namespace MongoDB.Samples.AggregationFramework.Library
             return aggregate.ToList();
         }
 
-        private string GetAreaByRegion<T>(IMongoCollection<T> collection) {
-            if (typeof(T) == typeof(State))
-            {
-                //run Linq aggregation
-            }
-            else
-            {
-                //run BsonDocument Aggregation
-            }
-            return string.Empty;
-        }
-
         public string GetPopulationByYear(IMongoCollection<BsonDocument> collection)
         {
             var aggregate = collection.Aggregate()

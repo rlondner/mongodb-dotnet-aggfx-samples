@@ -35,7 +35,7 @@ namespace MongoDB.Samples.AggregationFramework.ConsoleApp
             Console.WriteLine($"Command line parameter is '{index}'");
 
             string results = string.Empty;
-            DateTime dtStart = DateTime.MinValue;
+            DateTime dtStart = DateTime.Now;
             DateTime dtEnd = DateTime.MinValue;
 
             if (strMode.ToLower() == "linq")
@@ -44,7 +44,7 @@ namespace MongoDB.Samples.AggregationFramework.ConsoleApp
                 {
                     case 1:
                         Console.WriteLine("Total US Area with average region area is:\r\n");
-                        results = dbMgr.GetTotalUSArea(collection);
+                        results = dbMgr.GetTotalUSArea(colStates);
                         break;
                     case 2:
                         Console.WriteLine("Area by US Census region (with states) are:\r\n");
@@ -93,7 +93,6 @@ namespace MongoDB.Samples.AggregationFramework.ConsoleApp
                         break;
                     case 2:
                         Console.WriteLine("Area by US Census region (with states) are:\r\n");
-                        dtStart = DateTime.Now;
                         List<BsonDocument> censusAreas = dbMgr.GetAreaByRegion(collection);
                         dtEnd = DateTime.Now;
                         results = censusAreas.ToJson(new JsonWriterSettings { Indent = true });
@@ -127,7 +126,7 @@ namespace MongoDB.Samples.AggregationFramework.ConsoleApp
                         break;
                 }
             }
-
+            dtEnd = DateTime.Now;
             Console.WriteLine(results);
             //Console.WriteLine(Newtonsoft.Json.Linq.JValue.Parse(results).ToString(Newtonsoft.Json.Formatting.Indented))   
             Console.WriteLine($"{strMode.ToUpperInvariant()} method took {(dtEnd - dtStart).TotalMilliseconds} ms");

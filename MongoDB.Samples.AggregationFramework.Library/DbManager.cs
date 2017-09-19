@@ -11,6 +11,7 @@ namespace MongoDB.Samples.AggregationFramework.Library
     {
 
         private volatile IMongoCollection<BsonDocument> m_collection;
+        private volatile IMongoCollection<State> m_colStates;
         private static object syncRoot = new Object();
 
         private string m_ConnectionUri;
@@ -42,6 +43,24 @@ namespace MongoDB.Samples.AggregationFramework.Library
 
         }
 
+        public IMongoCollection<State> GetStatesCollection(string collectionName)
+        {
+            if (m_colStates == null)
+            {
+                lock (syncRoot)
+                {
+                    if (m_colStates == null)
+                    {
+                        var client = new MongoClient(m_ConnectionUri);
+                        var db = client.GetDatabase(m_DatabaseName);
+                        m_colStates = db.GetCollection<State>(collectionName);
+                    }
+                }
+            }
+            return m_colStates;
+
+        }
+
         public List<BsonDocument> GetTotalUSArea(IMongoCollection<BsonDocument> collection)
         {
             var aggregate = collection.Aggregate().Group(new BsonDocument {
@@ -63,43 +82,20 @@ namespace MongoDB.Samples.AggregationFramework.Library
                     { "numStates", new BsonDocument("$sum", 1) },
                     { "states", new BsonDocument("$push", "$name") }
                 });
-
-            //var aggregate2 = collection.AsQueryable().GroupBy(x => x.Id, x => new {
-            //  Region: x.Key(),
-            //  TotalArea: x.Sum(y => y.Area),
-            //  AvgArea: x.Average(y => y.Area)
-            //  NumStates: x.Count(),
-            //  States: x.Select(y => y.Name).ToList()
-            //});
-
-
             return aggregate.ToList();
         }
 
-        public void GetAreaByRegion(IMongoCollection<State> collection)
+        public List<CensusArea> GetAreaByRegion(IMongoCollection<State> collection)
         {
-            //var aggregate = collection.Aggregate()
-            //    .Group(new BsonDocument
-            //    {
-            //        { "_id", "$region" },
-            //        { "totalArea", new BsonDocument("$sum", "$areaM") },
-            //        { "avgArea", new BsonDocument("$avg", "$areaM") },
-            //        { "numStates", new BsonDocument("$sum", 1) },
-            //        { "states", new BsonDocument("$push", "$name") }
-            //    });
-
-
             var aggregate = collection.AsQueryable()
-                .GroupBy(x => x.Id, x => new
-            {
-              //Region: x.Key(),
-              //TotalArea: x.Sum(y => y.AreaM),
-              //AvgArea: x.Average(y => y.areaM)
-              //NumStates: x.Count(),
-              //States: x.Select(y => y.name).ToList()
-            });
-
-            //return aggregate.ToList();
+                .GroupBy(p => p.region, (k, s) => new CensusArea {
+                    Id = k,
+                    totalArea = s.Sum(y=> y.areaM),
+                    avgArea = s.Average(y => y.areaM),
+                    numStates = s.Count(),
+                    states = s.Select(y => y.name)
+                });
+            return aggregate.ToList();
         }
 
         public List<BsonDocument> GetPopulationByYear(IMongoCollection<BsonDocument> collection)

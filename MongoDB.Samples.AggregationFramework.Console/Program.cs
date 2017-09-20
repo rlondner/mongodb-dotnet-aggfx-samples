@@ -44,36 +44,36 @@ namespace MongoDB.Samples.AggregationFramework.ConsoleApp
             {
                 switch (index)
                 {
-                    case 1:
+                    case 4:
                         Console.WriteLine("Total US Area with average region area is:\r\n");
                         results = dbMgr.GetTotalUSArea(colStates);
                         break;
-                    case 2:
+                    case 5:
                         Console.WriteLine("Area by US Census region (with states) are:\r\n");
                         List<CensusArea> censusAreas = dbMgr.GetAreaByRegion(colStates);
                         results = censusAreas.ToJson(new JsonWriterSettings { Indent = true });
                         break;
-                    case 3:
+                    case 6:
                         Console.WriteLine("Total US population by census year:\r\n");
                         results = dbMgr.GetPopulationByYear(colStates);
                         break;
-                    case 4:
+                    case 7:
                         Console.WriteLine("Southern States population by census year:\r\n");
                         results = dbMgr.GetSouthernStatesPopulationByYear(colStates);
                         break;
-                    case 5:
+                    case 8:
                         Console.WriteLine("Population delta between 1990 and 2010 by state:\r\n");
                         results = dbMgr.GetPopulationDeltaByState(colStates);
                         break;
-                    case 6:
+                    case 9:
                         Console.WriteLine("Population in states within 500 km of Memphis:\r\n");
                         resData = dbMgr.GetPopulationByState500KmsAroundMemphis(collection);
                         break;
-                    case 7:
+                    case 10:
                         Console.WriteLine("Population in states within 500 km of Memphis (stored in database collection):\r\n");
                         resData = dbMgr.GetPopulationByState500KmsAroundMemphis(collection, "peopleNearMemphis");
                         break;
-                    case 8:
+                    case 11:
                         Console.WriteLine("State population density comparison in 1990 and 2010 :\r\n");
                         results = dbMgr.GetPopulationDensityByState(colStates);
                         break;
@@ -86,35 +86,35 @@ namespace MongoDB.Samples.AggregationFramework.ConsoleApp
             {
                 switch (index)
                 {
-                    case 1:
+                    case 4:
                         Console.WriteLine("Total US Area with average region area is:\r\n");
                         resData = dbMgr.GetTotalUSArea(collection);
                         break;
-                    case 2:
+                    case 5:
                         Console.WriteLine("Area by US Census region (with states) are:\r\n");
                         resData = dbMgr.GetAreaByRegion(collection);
                         break;
-                    case 3:
+                    case 6:
                         Console.WriteLine("Total US population by census year:\r\n");
                         resData = dbMgr.GetPopulationByYear(collection);
                         break;
-                    case 4:
+                    case 7:
                         Console.WriteLine("Southern States population by census year:\r\n");
                         resData = dbMgr.GetSouthernStatesPopulationByYear(collection);
                         break;
-                    case 5:
+                    case 8:
                         Console.WriteLine("Population delta between 1990 and 2010 by state:\r\n");
                         resData = dbMgr.GetPopulationDeltaByState(collection);
                         break;
-                    case 6:
+                    case 9:
                         Console.WriteLine("Population in states within 500 km of Memphis:\r\n");
                         resData = dbMgr.GetPopulationByState500KmsAroundMemphis(collection);
                         break;
-                    case 7:
+                    case 10:
                         Console.WriteLine("Population in states within 500 km of Memphis (stored in database collection):\r\n");
                         resData = dbMgr.GetPopulationByState500KmsAroundMemphis(collection, "peopleNearMemphis");
                         break;
-                    case 8:
+                    case 11:
                         Console.WriteLine("State population density comparison in 1990 and 2010 :\r\n");
                         resData = dbMgr.GetPopulationDensityByState(collection);
                         break;

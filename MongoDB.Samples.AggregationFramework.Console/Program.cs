@@ -34,9 +34,9 @@ namespace MongoDB.Samples.AggregationFramework.ConsoleApp
             string strMode = (args != null && args.Length > 1) ? args[1] : "bson";
             Console.WriteLine($"Command line parameter is '{index}'");
 
+            List<BsonDocument> resData = new List<BsonDocument>();
             string results = string.Empty;
             DateTime dtStart = DateTime.Now;
-            DateTime dtEnd = DateTime.MinValue;
 
             if (strMode.ToLower() == "linq")
             {
@@ -48,40 +48,37 @@ namespace MongoDB.Samples.AggregationFramework.ConsoleApp
                         break;
                     case 2:
                         Console.WriteLine("Area by US Census region (with states) are:\r\n");
-                        dtStart = DateTime.Now;
                         List<CensusArea> censusAreas = dbMgr.GetAreaByRegion(colStates);
-                        dtEnd = DateTime.Now;
                         results = censusAreas.ToJson(new JsonWriterSettings { Indent = true });
                         break;
                     case 3:
                         Console.WriteLine("Total US population by census year:\r\n");
-                        results = dbMgr.GetPopulationByYear(collection);
+                        results = dbMgr.GetPopulationByYear(colStates);
                         break;
                     case 4:
                         Console.WriteLine("Southern States population by census year:\r\n");
-                        results = dbMgr.GetSouthernStatesPopulationByYear(collection);
+                        results = dbMgr.GetSouthernStatesPopulationByYear(colStates);
                         break;
                     case 5:
                         Console.WriteLine("Population delta between 1990 and 2010 by state:\r\n");
-                        results = dbMgr.GetPopulationDeltaByState(collection);
+                        results = dbMgr.GetPopulationDeltaByState(colStates);
                         break;
                     case 6:
                         Console.WriteLine("Population in states within 500 km of Memphis:\r\n");
-                        results = dbMgr.GetPopulationByState500KmsAroundMemphis(collection);
+                        resData = dbMgr.GetPopulationByState500KmsAroundMemphis(collection);
                         break;
                     case 7:
                         Console.WriteLine("Population in states within 500 km of Memphis (stored in database collection):\r\n");
-                        results = dbMgr.GetPopulationByState500KmsAroundMemphis(collection, "peopleNearMemphis");
+                        resData = dbMgr.GetPopulationByState500KmsAroundMemphis(collection, "peopleNearMemphis");
                         break;
                     case 8:
                         Console.WriteLine("State population density comparison in 1990 and 2010 :\r\n");
-                        results = dbMgr.GetPopulationDensityByState(collection);
+                        results = dbMgr.GetPopulationDensityByState(colStates);
                         break;
                     default:
-                        results = dbMgr.GetTotalUSArea(collection);
+                        results = dbMgr.GetTotalUSArea(colStates);
                         break;
                 }
-
             }
             else
             {
@@ -89,46 +86,48 @@ namespace MongoDB.Samples.AggregationFramework.ConsoleApp
                 {
                     case 1:
                         Console.WriteLine("Total US Area with average region area is:\r\n");
-                        results = dbMgr.GetTotalUSArea(collection);
+                        resData = dbMgr.GetTotalUSArea(collection);
                         break;
                     case 2:
                         Console.WriteLine("Area by US Census region (with states) are:\r\n");
-                        List<BsonDocument> censusAreas = dbMgr.GetAreaByRegion(collection);
-                        dtEnd = DateTime.Now;
-                        results = censusAreas.ToJson(new JsonWriterSettings { Indent = true });
+                        resData = dbMgr.GetAreaByRegion(collection);
                         break;
                     case 3:
                         Console.WriteLine("Total US population by census year:\r\n");
-                        results = dbMgr.GetPopulationByYear(collection);
+                        resData = dbMgr.GetPopulationByYear(collection);
                         break;
                     case 4:
                         Console.WriteLine("Southern States population by census year:\r\n");
-                        results = dbMgr.GetSouthernStatesPopulationByYear(collection);
+                        resData = dbMgr.GetSouthernStatesPopulationByYear(collection);
                         break;
                     case 5:
                         Console.WriteLine("Population delta between 1990 and 2010 by state:\r\n");
-                        results = dbMgr.GetPopulationDeltaByState(collection);
+                        resData = dbMgr.GetPopulationDeltaByState(collection);
                         break;
                     case 6:
                         Console.WriteLine("Population in states within 500 km of Memphis:\r\n");
-                        results = dbMgr.GetPopulationByState500KmsAroundMemphis(collection);
+                        resData = dbMgr.GetPopulationByState500KmsAroundMemphis(collection);
                         break;
                     case 7:
                         Console.WriteLine("Population in states within 500 km of Memphis (stored in database collection):\r\n");
-                        results = dbMgr.GetPopulationByState500KmsAroundMemphis(collection, "peopleNearMemphis");
+                        resData = dbMgr.GetPopulationByState500KmsAroundMemphis(collection, "peopleNearMemphis");
                         break;
                     case 8:
                         Console.WriteLine("State population density comparison in 1990 and 2010 :\r\n");
-                        results = dbMgr.GetPopulationDensityByState(collection);
+                        resData = dbMgr.GetPopulationDensityByState(collection);
                         break;
                     default:
-                        results = dbMgr.GetTotalUSArea(collection);
+                        resData = dbMgr.GetTotalUSArea(collection);
                         break;
                 }
             }
-            dtEnd = DateTime.Now;
+
+            DateTime dtEnd = DateTime.Now;
+            if(resData.Count > 0)
+            {
+                results = resData.ToJson(new JsonWriterSettings { Indent = true });
+            }
             Console.WriteLine(results);
-            //Console.WriteLine(Newtonsoft.Json.Linq.JValue.Parse(results).ToString(Newtonsoft.Json.Formatting.Indented))   
             Console.WriteLine($"{strMode.ToUpperInvariant()} method took {(dtEnd - dtStart).TotalMilliseconds} ms");
             Console.WriteLine("Press Enter to exit");
             Console.ReadLine();

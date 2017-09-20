@@ -33,7 +33,7 @@ namespace MongoDB.Samples.AggregationFramework.Library
             {
                 lock (syncRoot)
                 {
-                    if(m_client == null)
+                    if (m_client == null)
                     {
                         m_client = new MongoClient(m_ConnectionUri);
                     }
@@ -67,31 +67,25 @@ namespace MongoDB.Samples.AggregationFramework.Library
             return m_colStates;
         }
 
-        public string GetTotalUSArea(IMongoCollection<BsonDocument> collection)
+        public List<BsonDocument> GetTotalUSArea(IMongoCollection<BsonDocument> collection)
         {
             var aggregate = collection.Aggregate().Group(new BsonDocument {
                 { "_id", BsonNull.Value },
                 { "totalArea", new BsonDocument("$sum", "$areaM") },
                 { "avgArea", new BsonDocument("$avg", "$areaM") }
             });
-            return aggregate.ToList().ToJson();
+            return aggregate.ToList();
         }
 
         public string GetTotalUSArea(IMongoCollection<State> collection)
         {
-            //var aggregate = collection.Aggregate().Group(new BsonDocument {
-            //    { "_id", BsonNull.Value },
-            //    { "totalArea", new BsonDocument("$sum", "$areaM") },
-            //    { "avgArea", new BsonDocument("$avg", "$areaM") }
-            //});
-
             var aggregate = collection.AsQueryable()
-                .GroupBy(p => p.region,(k, s) => new
+                .GroupBy(p => p.Region, (k, s) => new
                 {
-                    totalArea = s.Sum(y => y.areaM),
-                    avgArea = s.Average(y => y.areaM),
+                    totalArea = s.Sum(y => y.AreaSquareMiles),
+                    avgArea = s.Average(y => y.AreaSquareMiles),
                 });
-            return aggregate.ToList().ToJson();
+            return aggregate.ToList().ToJson(new JsonWriterSettings { Indent = true });
         }
 
 
@@ -112,18 +106,18 @@ namespace MongoDB.Samples.AggregationFramework.Library
         public List<CensusArea> GetAreaByRegion(IMongoCollection<State> collection)
         {
             var aggregate = collection.AsQueryable()
-                .GroupBy(p => p.region, (k, s) => new CensusArea
+                .GroupBy(p => p.Region, (k, s) => new CensusArea
                 {
                     Id = k,
-                    totalArea = s.Sum(y => y.areaM),
-                    avgArea = s.Average(y => y.areaM),
+                    totalArea = s.Sum(y => y.AreaSquareMiles),
+                    avgArea = s.Average(y => y.AreaSquareMiles),
                     numStates = s.Count(),
-                    states = s.Select(y => y.name)
+                    states = s.Select(y => y.Name)
                 });
             return aggregate.ToList();
         }
 
-        public string GetPopulationByYear(IMongoCollection<BsonDocument> collection)
+        public List<BsonDocument> GetPopulationByYear(IMongoCollection<BsonDocument> collection)
         {
             var aggregate = collection.Aggregate()
                 .Unwind("data")
@@ -133,10 +127,20 @@ namespace MongoDB.Samples.AggregationFramework.Library
                     { "totalPop", new BsonDocument("$sum", "$data.totalPop") }
                 })
                 .Sort(new BsonDocument("totalPop", 1));
-            return aggregate.ToList().ToJson();
+            return aggregate.ToList();
         }
 
-        public string GetSouthernStatesPopulationByYear(IMongoCollection<BsonDocument> collection)
+        public string GetPopulationByYear(IMongoCollection<State> collection)
+        {
+            var aggregate = collection.AsQueryable()
+                .SelectMany(s => s.Data)
+                .GroupBy(d => d.Year)
+                .Select(d => new { Id = d.Key, totalPop = d.Sum(y => y.TotalPopulation) })
+                .OrderBy(p => p.totalPop);
+            return aggregate.ToList().ToJson(new JsonWriterSettings { Indent = true });
+        }
+
+        public List<BsonDocument> GetSouthernStatesPopulationByYear(IMongoCollection<BsonDocument> collection)
         {
             var aggregate = collection.Aggregate()
                 .Match(new BsonDocument("region", "South"))
@@ -148,10 +152,21 @@ namespace MongoDB.Samples.AggregationFramework.Library
                 })
                 .Sort(new BsonDocument("totalPop", 1))
             ;
-            return aggregate.ToList().ToJson();
+            return aggregate.ToList();
         }
 
-        public string GetPopulationDeltaByState(IMongoCollection<BsonDocument> collection)
+        public string GetSouthernStatesPopulationByYear(IMongoCollection<State> collection)
+        {
+            var aggregate = collection.AsQueryable()
+                .Where(s => s.Region == "South")
+                .SelectMany(s => s.Data)
+                .GroupBy(d => d.Year)
+                .Select(d => new { Id = d.Key, totalPop = d.Sum(y => y.TotalPopulation) })
+                .OrderBy(p => p.totalPop);
+            return aggregate.ToList().ToJson(new JsonWriterSettings { Indent = true });
+        }
+
+        public List<BsonDocument> GetPopulationDeltaByState(IMongoCollection<BsonDocument> collection)
         {
             var aggregate = collection.Aggregate()
                 .Unwind("data")
@@ -181,15 +196,38 @@ namespace MongoDB.Samples.AggregationFramework.Library
                 )
                 .Sort(new BsonDocument("deltaPercent", 1))
             ;
-            return aggregate.ToList().ToJson();
+            return aggregate.ToList();
         }
 
+        public string GetPopulationDeltaByState(IMongoCollection<State> collection)
+        {
+            var aggregate = collection.AsQueryable()
+                .SelectMany(s => s.Data, (s, state) => new
+                {
+                    Name = s.Name,
+                    Year = state.Year,
+                    TotalPopulation = state.TotalPopulation
+                })
+                .OrderBy(d => d.Year)
+                .GroupBy(d => d.Name)
+                .Select(d => new
+                {
+                    Id = d.Key,
+                    pop1990 = d.First().TotalPopulation,
+                    pop2010 = d.Last().TotalPopulation,
+                    delta = d.Last().TotalPopulation - d.First().TotalPopulation,
+                    deltaPercent = Math.Truncate((double)100 * (d.Last().TotalPopulation / d.First().TotalPopulation - 1))
+                })
+                .OrderBy(d => d.deltaPercent)
+                ;
+            return aggregate.ToList().ToJson(new JsonWriterSettings { Indent = true });
+        }
         /// <summary>
         /// Get total population by year in states the center of which is within a circle of 500 km radius around Memphis
         /// </summary>
         /// <param name="collection"></param>
         /// <returns></returns>
-        public string GetPopulationByState500KmsAroundMemphis(IMongoCollection<BsonDocument> collection, string outCollection = "")
+        public List<BsonDocument> GetPopulationByState500KmsAroundMemphis(IMongoCollection<BsonDocument> collection, string outCollection = "")
         {
             BsonDocument geoPoint = new BsonDocument
         {
@@ -220,10 +258,10 @@ namespace MongoDB.Samples.AggregationFramework.Library
             {
                 aggregate.Out(outCollection);
             }
-            return aggregate.ToList().ToJson();
+            return aggregate.ToList();
         }
 
-        public string GetPopulationDensityByState(IMongoCollection<BsonDocument> collection)
+        public List<BsonDocument> GetPopulationDensityByState(IMongoCollection<BsonDocument> collection)
         {
             var aggregate = collection.Aggregate()
                 .Match(new BsonDocument("data.totalPop", new BsonDocument("$gt", 1000000)))
@@ -237,36 +275,82 @@ namespace MongoDB.Samples.AggregationFramework.Library
                     { "areaM" , new BsonDocument("$last", "$areaM") },
                     { "division" , new BsonDocument("$last", "$division") }
                 })
-                .Group(new BsonDocument
-                {
-                    { "_id", "$division" },
-                    { "_totalPop1990", new BsonDocument("$sum", "$pop1990") },
-                    { "_totalPop2010", new BsonDocument("$sum", "$pop2010") },
-                    { "_totalAreaM", new BsonDocument("$sum", "$areaM") },
-                })
-                .Match(new BsonDocument("_totalAreaM", new BsonDocument("$gt", 100000)))
-                .Project(new BsonDocument
-                {
-                    { "_id", 0 },
-                    { "division", "$_id" } ,
-                    {  "density1990", new BsonDocument("$divide", new BsonArray() {"$_totalPop1990", "$_totalAreaM"}) },
-                    {  "density2010", new BsonDocument("$divide", new BsonArray() {"$_totalPop2010", "$_totalAreaM"}) },
-                    {  "densityDelta", new BsonDocument(
-                            "$subtract", new BsonArray () {
-                                new BsonDocument(
-                                "$divide", new BsonArray() { "$_totalPop2010", "$_totalAreaM" }),
-                                new BsonDocument(
-                                "$divide", new BsonArray() { "$_totalPop1990", "$_totalAreaM" })
-                            })
-                    },
-                    { "totalAreaM", "$_totalAreaM" },
-                    { "totalPop1990", "$_totalPop1990" },
-                    { "totalPop2010", "$_totalPop2010" },
-                }
-                )
-                .Sort(new BsonDocument("deltaPercent", 1))
+            .Group(new BsonDocument
+            {
+                { "_id", "$division" },
+                { "_totalPop1990", new BsonDocument("$sum", "$pop1990") },
+                { "_totalPop2010", new BsonDocument("$sum", "$pop2010") },
+                { "_totalAreaM", new BsonDocument("$sum", "$areaM") },
+            })
+            .Match(new BsonDocument("_totalAreaM", new BsonDocument("$gt", 100000)))
+            .Project(new BsonDocument
+            {
+                { "_id", 0 },
+                { "division", "$_id" } ,
+                { "density1990", new BsonDocument("$divide", new BsonArray() {"$_totalPop1990", "$_totalAreaM"}) },
+                { "density2010", new BsonDocument("$divide", new BsonArray() {"$_totalPop2010", "$_totalAreaM"}) },
+                { "densityDelta", new BsonDocument(
+                        "$subtract", new BsonArray () {
+                            new BsonDocument(
+                            "$divide", new BsonArray() { "$_totalPop2010", "$_totalAreaM" }),
+                            new BsonDocument(
+                            "$divide", new BsonArray() { "$_totalPop1990", "$_totalAreaM" })
+                        })
+                },
+                { "totalAreaM", "$_totalAreaM" },
+                { "totalPop1990", "$_totalPop1990" },
+                { "totalPop2010", "$_totalPop2010" },
+            }
+            )
+            .Sort(new BsonDocument("densityDelta", -1))
             ;
-            return aggregate.ToList().ToJson();
+            return aggregate.ToList();
+        }
+
+        public string GetPopulationDensityByState(IMongoCollection<State> collection)
+        {
+            var aggregate = collection.AsQueryable()
+                .SelectMany(s => s.Data, (state, censusData) => new
+                {
+                    Name = state.Name,
+                    Year = censusData.Year,
+                    TotalPopulation = censusData.TotalPopulation,
+                    AreaSquareMiles = state.AreaSquareMiles,
+                    Division = state.Division
+                })
+                .Where(d => d.TotalPopulation > 1000000)
+                .OrderBy(d => d.Year)
+                .GroupBy(d => d.Name)
+                .Select(d => new
+                {
+                    Id = d.Key,
+                    pop1990 = d.First().TotalPopulation,
+                    pop2010 = d.Last().TotalPopulation,
+                    AreaSquareMiles = d.Last().AreaSquareMiles,
+                    Division = d.Last().Division
+                })
+                .GroupBy(d => d.Division)
+                .Select(d => new
+                {
+                    Id = d.Key,
+                    totalPop1990 = d.Sum(y => y.pop1990),
+                    totalPop2010 = d.Sum(y => y.pop2010),
+                    totalAreaM = d.Sum(y => y.AreaSquareMiles),
+                })
+                .Where(d => d.totalAreaM > 100000)
+                .Select(d => new
+                {
+                    division = d.Id,
+                    totalPop1990 = d.totalPop1990,
+                    totalPop2010 = d.totalPop2010,
+                    totalAreaM = d.totalAreaM,
+                    density1990 = d.totalPop1990 / d.totalAreaM,
+                    density2010 = d.totalPop2010 / d.totalAreaM,
+                    densityDelta = (d.totalPop2010 / d.totalAreaM) - (d.totalPop1990 / d.totalAreaM),
+                })
+                .OrderByDescending(d => d.densityDelta)
+                ;
+            return aggregate.ToList().ToJson(new JsonWriterSettings { Indent = true });
         }
 
     }

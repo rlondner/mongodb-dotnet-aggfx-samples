@@ -1,21 +1,20 @@
 ﻿using System;
-using MongoDB.Driver;
-using MongoDB.Bson;
 using System.Collections.Generic;
 using System.Linq;
-using MongoDB.Driver.Linq;
+
+using MongoDB.Bson;
 using MongoDB.Bson.IO;
+using MongoDB.Driver;
+using MongoDB.Driver.Linq;
 
 namespace MongoDB.Samples.AggregationFramework.Library
 {
     public class DbManager
     {
-
         private volatile IMongoCollection<BsonDocument> m_collection;
         private volatile IMongoCollection<State> m_colStates;
         private volatile IMongoClient m_client;
         private static object syncRoot = new Object();
-
         private string m_ConnectionUri;
         private string m_DatabaseName;
 
@@ -88,7 +87,6 @@ namespace MongoDB.Samples.AggregationFramework.Library
             return aggregate.ToList().ToJson(new JsonWriterSettings { Indent = true });
         }
 
-
         public List<BsonDocument> GetAreaByRegion(IMongoCollection<BsonDocument> collection)
         {
             var aggregate = collection.Aggregate()
@@ -109,10 +107,10 @@ namespace MongoDB.Samples.AggregationFramework.Library
                 .GroupBy(p => p.Region, (k, s) => new CensusArea
                 {
                     Id = k,
-                    totalArea = s.Sum(y => y.AreaSquareMiles),
-                    avgArea = s.Average(y => y.AreaSquareMiles),
-                    numStates = s.Count(),
-                    states = s.Select(y => y.Name)
+                    TotalArea = s.Sum(y => y.AreaSquareMiles),
+                    AverageArea = s.Average(y => y.AreaSquareMiles),
+                    StatesCount = s.Count(),
+                    States = s.Select(y => y.Name)
                 });
             return aggregate.ToList();
         }
@@ -222,7 +220,8 @@ namespace MongoDB.Samples.AggregationFramework.Library
                 ;
             return aggregate.ToList().ToJson(new JsonWriterSettings { Indent = true });
         }
-        /// <summary>
+
+/// <summary>
         /// Get total population by year in states the center of which is within a circle of 500 km radius around Memphis
         /// </summary>
         /// <param name="collection"></param>
@@ -352,6 +351,5 @@ namespace MongoDB.Samples.AggregationFramework.Library
                 ;
             return aggregate.ToList().ToJson(new JsonWriterSettings { Indent = true });
         }
-
     }
 }

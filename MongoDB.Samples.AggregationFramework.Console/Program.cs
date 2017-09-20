@@ -1,10 +1,12 @@
 ﻿using Microsoft.Extensions.Configuration;
-using MongoDB.Samples.AggregationFramework.Library;
 using System;
 using System.IO;
-using MongoDB.Bson.IO;
 using System.Collections.Generic;
+
 using MongoDB.Bson;
+using MongoDB.Bson.IO;
+
+using MongoDB.Samples.AggregationFramework.Library;
 
 namespace MongoDB.Samples.AggregationFramework.ConsoleApp
 {

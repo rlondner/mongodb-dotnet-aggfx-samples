@@ -306,7 +306,7 @@ namespace MongoDB.Samples.AggregationFramework.Library
             return aggregate.ToList();
         }
 
-        public string GetPopulationDensityByState(IMongoCollection<State> collection)
+        public string GetPopulationDensityByRegion(IMongoCollection<State> collection)
         {
             var aggregate = collection.AsQueryable()
                 .SelectMany(s => s.Data, (state, censusData) => new

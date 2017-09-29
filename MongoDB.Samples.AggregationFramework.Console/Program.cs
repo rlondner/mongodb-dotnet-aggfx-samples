@@ -75,7 +75,7 @@ namespace MongoDB.Samples.AggregationFramework.ConsoleApp
                         break;
                     case 11:
                         Console.WriteLine("State population density comparison in 1990 and 2010 :\r\n");
-                        results = dbMgr.GetPopulationDensityByState(colStates);
+                        results = dbMgr.GetPopulationDensityByRegion(colStates);
                         break;
                     default:
                         results = dbMgr.GetTotalUSArea(colStates);

@@ -13,6 +13,10 @@ namespace MongoDB.Samples.AggregationFramework.Library
     {
         private volatile IMongoCollection<BsonDocument> m_collection;
         private volatile IMongoCollection<State> m_colStates;
+        private volatile IMongoCollection<Ship> m_colShips;
+        private volatile IMongoCollection<Container> m_colContainers;
+
+
         private volatile IMongoClient m_client;
         private static object syncRoot = new Object();
         private string m_ConnectionUri;
@@ -65,6 +69,47 @@ namespace MongoDB.Samples.AggregationFramework.Library
             }
             return m_colStates;
         }
+
+        public IMongoCollection<Ship> GetShipsCollection(string collectionName)
+        {
+            if (m_colShips == null)
+            {
+                lock (syncRoot)
+                {
+                    if (m_client == null)
+                    {
+                        m_client = new MongoClient(m_ConnectionUri);
+                    }
+                    if (m_colShips == null)
+                    {
+                        var db = m_client.GetDatabase(m_DatabaseName);
+                        m_colShips = db.GetCollection<Ship>(collectionName);
+                    }
+                }
+            }
+            return m_colShips;
+        }
+
+        public IMongoCollection<Container> GetContainersCollection(string collectionName)
+        {
+            if (m_colContainers == null)
+            {
+                lock (syncRoot)
+                {
+                    if (m_client == null)
+                    {
+                        m_client = new MongoClient(m_ConnectionUri);
+                    }
+                    if (m_colContainers == null)
+                    {
+                        var db = m_client.GetDatabase(m_DatabaseName);
+                        m_colContainers = db.GetCollection<Container>(collectionName);
+                    }
+                }
+            }
+            return m_colContainers;
+        }
+
 
         public List<BsonDocument> GetTotalUSArea(IMongoCollection<BsonDocument> collection)
         {
@@ -349,6 +394,23 @@ namespace MongoDB.Samples.AggregationFramework.Library
                 })
                 .OrderByDescending(d => d.densityDelta)
                 ;
+            return aggregate.ToList().ToJson(new JsonWriterSettings { Indent = true });
+        }
+
+        public string GetShipsCargos(IMongoCollection<Ship> collection, IMongoCollection<Container> containers)
+        {
+            //var aggregate = collection.AsQueryable()
+            //    .Where(s => s.Route.Destination.Country == "United States")
+            //    .GroupJoin()
+            //    ;
+
+            var aggregate = from s in collection.AsQueryable()
+                            where s.Route.Destination.Country == "United States"
+                            join c in containers on s.Name equals c.ShipName into cargos
+                            from cargo in cargos.AsQueryable()
+                            //select cargo
+                            group cargo by s.Name
+                            ;
             return aggregate.ToList().ToJson(new JsonWriterSettings { Indent = true });
         }
     }

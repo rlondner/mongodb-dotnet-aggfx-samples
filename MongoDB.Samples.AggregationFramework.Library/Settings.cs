@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace MongoDB.Samples.AggregationFramework.ConsoleApp
+namespace MongoDB.Samples.AggregationFramework.Library
 {
 
     public class MongoDBSettings

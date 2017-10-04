@@ -2,7 +2,7 @@
   "profiles": {
     "MongoDB.Samples.AggregationFramework.Console": {
       "commandName": "Project",
-      "commandLineArgs": "11 linq"
+      "commandLineArgs": "1 linq"
     }
   }
 }

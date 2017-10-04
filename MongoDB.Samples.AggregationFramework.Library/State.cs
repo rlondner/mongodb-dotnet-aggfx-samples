@@ -1,11 +1,12 @@
 ﻿using System.Collections.Generic;
 using MongoDB.Bson.Serialization.Attributes;
+using MongoDB.Bson;
 
 namespace MongoDB.Samples.AggregationFramework.Library
 {
     public class State
     {
-        public string Id { get; set; }
+        public ObjectId Id { get; set; }
 
         [BsonElement("name")]
         public string Name { get; set; }

@@ -408,8 +408,9 @@ namespace MongoDB.Samples.AggregationFramework.Library
                             where s.Route.Destination.Country == "United States"
                             join c in containers on s.Name equals c.ShipName into cargos
                             from cargo in cargos.AsQueryable()
-                            //select cargo
-                            group cargo by s.Name
+                            group cargo by new { ship = s.Name, cargo2 = cargo.Cargo, route = s.Route, location = s.Location } into g
+                            select new {Id = g.Key, Count = g.Count()}
+
                             ;
             return aggregate.ToList().ToJson(new JsonWriterSettings { Indent = true });
         }

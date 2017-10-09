@@ -1,4 +1,6 @@
-﻿using MongoDB.Bson.Serialization.Attributes;
+﻿using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
+using MongoDB.Driver.GeoJsonObjectModel;
 using System;
 using System.Collections.Generic;
 
@@ -6,8 +8,6 @@ namespace MongoDB.Samples.AggregationFramework.Library
 {
     public class Ship
     {
-        //public string Id { get; set; }
-
         public Bson.ObjectId Id { get; set; }
 
         public string Name { get; set; }
@@ -62,6 +62,52 @@ namespace MongoDB.Samples.AggregationFramework.Library
 
         [BsonElement("type")]
         public string Type { get; set; }
+    }
 
+    public class PolygonGeoData
+    {
+        [BsonElement("coordinates")]
+        public BsonArray Coordinates { get; set; }
+        //public IEnumerable<double>[] Coordinates { get; set; }
+
+        [BsonElement("type")]
+        public string Type { get; set; }
+    }
+
+    public class Ocean
+    {
+        public Bson.ObjectId Id { get; set; }
+
+        [BsonElement("type")]
+        public string Type { get; set; }
+
+        [BsonElement("name")]
+        public string Name { get; set; }
+
+        [BsonElement("geometry")]
+        public GeoJsonGeometry<GeoJson2DGeographicCoordinates> Geometry { get; set; }
+
+    }
+
+    public class Container
+    {
+        public ObjectId Id { get; set; }
+
+        [BsonElement("container_id")]
+        public string ContainerId { get; set; }
+
+        [BsonElement("cargo")]
+        public string Cargo { get; set; }
+
+        [BsonElement("type")]
+        public string Type { get; set; }
+
+        public int Tons { get; set; }
+
+        [BsonElement("shipName")]
+        public string ShipName { get; set; }
+
+        [BsonElement("location")]
+        public GeoData Location { get; set; }
     }
 }

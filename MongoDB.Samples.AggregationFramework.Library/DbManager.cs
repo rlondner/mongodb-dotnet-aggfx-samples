@@ -6,13 +6,16 @@ using MongoDB.Bson;
 using MongoDB.Bson.IO;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
+using MongoDB.Driver.GeoJsonObjectModel;
 
 namespace MongoDB.Samples.AggregationFramework.Library
 {
     public class DbManager
     {
         private volatile IMongoCollection<BsonDocument> m_collection;
+
         private volatile IMongoCollection<State> m_colStates;
+        private volatile IMongoCollection<Ocean> m_colOceans;
         private volatile IMongoCollection<Ship> m_colShips;
         private volatile IMongoCollection<Container> m_colContainers;
 
@@ -68,6 +71,26 @@ namespace MongoDB.Samples.AggregationFramework.Library
                 }
             }
             return m_colStates;
+        }
+
+        public IMongoCollection<Ocean> GetOceansCollection(string collectionName)
+        {
+            if (m_colOceans == null)
+            {
+                lock (syncRoot)
+                {
+                    if (m_client == null)
+                    {
+                        m_client = new MongoClient(m_ConnectionUri);
+                    }
+                    if (m_colOceans == null)
+                    {
+                        var db = m_client.GetDatabase(m_DatabaseName);
+                        m_colOceans = db.GetCollection<Ocean>(collectionName);
+                    }
+                }
+            }
+            return m_colOceans;
         }
 
         public IMongoCollection<Ship> GetShipsCollection(string collectionName)
@@ -397,21 +420,39 @@ namespace MongoDB.Samples.AggregationFramework.Library
             return aggregate.ToList().ToJson(new JsonWriterSettings { Indent = true });
         }
 
-        public string GetShipsCargos(IMongoCollection<Ship> collection, IMongoCollection<Container> containers)
+        public string GetShipsCargos(IMongoCollection<Ship> collection, IMongoCollection<Container> containers, Ocean filteredOcean = null)
         {
-            //var aggregate = collection.AsQueryable()
-            //    .Where(s => s.Route.Destination.Country == "United States")
-            //    .GroupJoin()
-            //    ;
+            FilterDefinition<BsonDocument> oceanFilter = null;
+            if (filteredOcean != null)
+            {
+                oceanFilter = Builders<BsonDocument>.Filter.GeoWithin("location", filteredOcean.Geometry);
+            }
 
-            var aggregate = from s in collection.AsQueryable()
+            var filterBuilder = Builders<Ship>.Filter;
+            var routeFilter = filterBuilder.Eq(s => s.Route.Destination.Country, "United States");
+
+            var aggregate = collection.AsQueryable()
+                .Where(x => routeFilter.Inject() && oceanFilter.Inject())
+                //the GroupJoin call below would only perform the $lookup stage
+                //.GroupJoin(containers, s => s.Name, cargo => cargo.ShipName, (s, cargo) => new { s, cargos = cargo })
+                //the GroupJoin call below performs both the $lookup and $unwind stages
+                .Join(containers, s => s.Name, container => container.ShipName, (s, c) => new { ship = s, cargo = c })
+                .GroupBy(x => new { ship = x.ship.Name, cargo = x.cargo.Cargo, route = x.ship.Route, location = x.ship.Location })
+                .Select(g => new { Id = new {g.Key.ship, g.Key.route, g.Key.location}, cargo = new { type = g.Key.cargo, tons = g.Sum(x => x.cargo.Tons), count = g.Count() } })
+                .GroupBy(x => x.Id)
+                .Select(x => new { x.Key.ship, x.Key.route, x.Key.location, cargo = x.Select(y => y.cargo) });
+
+            var aggregate2 = from s in collection.AsQueryable()
                             where s.Route.Destination.Country == "United States"
-                            join c in containers on s.Name equals c.ShipName into cargos
-                            from cargo in cargos.AsQueryable()
-                            group cargo by new { ship = s.Name, cargo2 = cargo.Cargo, route = s.Route, location = s.Location } into g
-                            select new {Id = g.Key, Count = g.Count()}
+                            join c in containers on s.Name equals c.ShipName into joined
+                            from shipCargo in joined.AsQueryable()
+                            group shipCargo by new { ship = s.Name, cargo2 = shipCargo.Cargo, route = s.Route, location = s.Location } into g
+                            //group cargo by cargo.Cargo into g
+                            //group cargo by new { ship = s.Name, cargo2 = cargo.Cargo, route = s.Route, location = s.Location } into g
+                            select new { Name = g.Key, Count = g.Count() };
+            //select new {Id = g.Key, Count = g.Count()}
 
-                            ;
+            ;
             return aggregate.ToList().ToJson(new JsonWriterSettings { Indent = true });
         }
     }

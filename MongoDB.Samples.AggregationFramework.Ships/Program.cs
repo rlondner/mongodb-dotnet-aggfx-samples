@@ -7,6 +7,7 @@ using MongoDB.Bson;
 using MongoDB.Bson.IO;
 
 using MongoDB.Samples.AggregationFramework.Library;
+using MongoDB.Driver;
 
 namespace MongoDB.Samples.AggregationFramework.ConsoleApp2
 {
@@ -30,8 +31,11 @@ namespace MongoDB.Samples.AggregationFramework.ConsoleApp2
 
             DbManager dbMgr = new DbManager(mdbSettings.ConnectionUri, mdbSettings.DatabaseName);
             var collection = dbMgr.GetCollection(mdbSettings.CollectionName);
+
+
             var colShips = dbMgr.GetShipsCollection(mdbSettings.CollectionName);
             var colContainers = dbMgr.GetContainersCollection("containers");
+            var colOceans = dbMgr.GetOceansCollection("oceans");
 
             //int index = (args != null && args.Length > 0) ? Int32.Parse(args[0]) : 1;
             string strMode = (args != null && args.Length > 1) ? args[1] : "bson";
@@ -41,8 +45,12 @@ namespace MongoDB.Samples.AggregationFramework.ConsoleApp2
             string results = string.Empty;
             DateTime dtStart = DateTime.Now;
 
+            var filterBuilder = Builders<Ocean>.Filter;
+            var filter = filterBuilder.Eq(o => o.Name, "NORTH ATLANTIC OCEAN");
 
-            results = dbMgr.GetShipsCargos(colShips, colContainers);
+            Ocean northAtlanticOcean = colOceans.FindSync(filter).First();
+
+            results = dbMgr.GetShipsCargos(colShips, colContainers, northAtlanticOcean);
 
             DateTime dtEnd = DateTime.Now;
             if (resData.Count > 0)
